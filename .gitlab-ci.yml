@@ -9,7 +9,7 @@ build-linux-amd64:
     - docker-capsule-64
   script:
     - source /root/.cargo/env
-    - release/ci-build.sh
+    - release/ci-build.sh linux amd64
   artifacts:
     expire_in: 1 week
     when: always
@@ -21,7 +21,7 @@ build-darwin-amd64:
   tags:
     - darwin
   script:
-    - release/ci-build.sh
+    - release/ci-build.sh darwin amd64
   artifacts:
     expire_in: 1 week
     when: always
@@ -33,7 +33,7 @@ build-windows-amd64:
   tags:
     - windows
   script:
-    - release/ci-build.sh
+    - release/ci-build.sh windows amd64
   artifacts:
     expire_in: 1 week
     when: always
