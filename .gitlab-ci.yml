@@ -1,0 +1,54 @@
+
+stages:
+  - build
+
+build-linux-amd64:
+  stage: build
+  tags:
+    - docker-capsule-64
+  script:
+    - release/ci-build.sh
+  artifacts:
+    expire_in: 1 week
+    when: always
+    paths:
+      - target/release/itch-lite
+
+build-darwin-amd64:
+  stage: build
+  tags:
+    - darwin
+  script:
+    - release/ci-build.sh
+  artifacts:
+    expire_in: 1 week
+    when: always
+    paths:
+      - target/release/itch-lite
+
+build-windows-amd64:
+  stage: build
+  tags:
+    - windows
+  script:
+    - release/ci-build.sh
+  artifacts:
+    expire_in: 1 week
+    when: always
+    paths:
+      - target/release/itch-lite.exe
+
+deploy-itchio:
+  stage: deploy
+  when: manual
+  tags:
+    - linux
+  only:
+    - tags
+  script:
+    - release/ci-deploy.js
+  dependencies:
+    - build-linux-amd64
+    - build-darwin-amd64
+    - build-windows-amd64
+  
