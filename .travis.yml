@@ -4,8 +4,12 @@ rust:
   - "1.38.0"
 
 script:
-  - cargo build --release
-  - ls -lhA ./target/release
+  - release/ci-build.sh
+
+addons:
+  apt:
+    packages:
+      - libwebkit2gtk-4.0-dev
 
 os:
   - linux
