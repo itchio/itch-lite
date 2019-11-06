@@ -5,7 +5,8 @@ authors = ["A. Nonymous Wenger <fasterthanlime@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-web-view = { version = "0.5.3", features = ["edge"] }
+# note: edge can't build on Win2012 it's only Win10
+web-view = { version = "0.5.3", features = [] }
 
 [profile.release]
 lto = true
