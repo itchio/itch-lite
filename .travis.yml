@@ -1,0 +1,14 @@
+language: rust
+
+rust:
+  - "1.38.0"
+
+script:
+  - cargo build --release
+  - ls -lhA ./target/release
+
+os:
+  - linux
+  - osx
+  - windows
+
