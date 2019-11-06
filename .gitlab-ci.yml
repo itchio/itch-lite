@@ -1,6 +1,7 @@
 
 stages:
   - build
+  - deploy
 
 build-linux-amd64:
   stage: build
@@ -12,7 +13,7 @@ build-linux-amd64:
     expire_in: 1 week
     when: always
     paths:
-      - target/release/itch-lite
+      - broth
 
 build-darwin-amd64:
   stage: build
@@ -24,7 +25,7 @@ build-darwin-amd64:
     expire_in: 1 week
     when: always
     paths:
-      - target/release/itch-lite
+      - broth
 
 build-windows-amd64:
   stage: build
@@ -36,7 +37,7 @@ build-windows-amd64:
     expire_in: 1 week
     when: always
     paths:
-      - target/release/itch-lite.exe
+      - broth
 
 deploy-itchio:
   stage: deploy
@@ -46,7 +47,7 @@ deploy-itchio:
   only:
     - tags
   script:
-    - release/ci-deploy.js
+    - release/ci-deploy.sh
   dependencies:
     - build-linux-amd64
     - build-darwin-amd64

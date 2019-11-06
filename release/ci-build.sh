@@ -2,24 +2,39 @@
 
 cargo build --release
 
-TARGET="./target/release/itch-lite"
-
-if [[ -z ${TRAVIS_OS_NAME} ]]; then
-    echo "\$TRAVIS_OS_NAME can't be empty!"
+function usage () {
+    echo "Usage:"
+    echo "  ci-build.sh OS ARCH"
+    echo "Where OS is one of: windows linux darwin"
+    echo "And ARCH is one of: 386 amd64"
     exit 1
+}
+
+OS="$1"
+ARCH="$2"
+
+if [[ -z ${OS} ]]; then
+    usage
+fi
+if [[ -z ${ARCH} ]]; then
+    usage
 fi
 
-if [[ ${TRAVIS_OS_NAME} == "windows" ]]; then
+TARGET="./target/release/itch-lite"
+
+if [[ ${OS} == "windows" ]]; then
 TARGET="${TARGET}.exe"
 fi # windows os
 
 ls -lhA "${TARGET}"
 
-if [[ ${TRAVIS_OS_NAME} != "windows" ]]; then
+if [[ ${OS} != "windows" ]]; then
 strip "${TARGET}"
 fi # not windows os
 
 ls -lhA "${TARGET}"
 
-CHANNEL="${TRAVIS_OS_NAME}"
-butler push "${TARGET}" "itch-test-account/itch-lite:${CHANNEL}"
+DIST="broth/${OS}-${ARCH}"
+mkdir -p ${DIST}
+cp -rf ${TARGET} ${DIST}
+
