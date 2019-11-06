@@ -8,6 +8,7 @@ build-linux-amd64:
   tags:
     - docker-capsule-64
   script:
+    - source /root/.cargo/env
     - release/ci-build.sh
   artifacts:
     expire_in: 1 week
