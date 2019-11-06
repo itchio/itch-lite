@@ -20,6 +20,9 @@ if [[ -z ${ARCH} ]]; then
     usage
 fi
 
+rustup show
+cargo --version
+
 TARGET="./target/release/itch-lite"
 
 if [[ ${OS} == "windows" ]]; then
