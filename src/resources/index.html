@@ -24,17 +24,20 @@
         window.testMessage = () => {
             tether("Oh yes.");
         };
+
+        window.testNavigate = () => {
+            window.location = "https://example.org";
+        };
     </script>
 </head>
 
 <body>
     <p>There's your native app:</p>
 
-    <!--  <div class="iframe-container">
-        <iframe src="http://useragentstring.com/"></iframe>
-    </div>  -->
+    <img src="https://img.itch.zone/aW1nLzI2NTUzODEucG5n/300x240%23c/6%2B4W1J.png">
 
     <button onclick="testMessage()">Send message</button>
+    <button onclick="testNavigate()">Navigate away!</button>
 
     <p>Did you like it?</p>
 </body>

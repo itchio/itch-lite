@@ -90,6 +90,11 @@ struct _tether {
             message(data, s.c_str());
         });
 
+        webview.WebResourceRequested([=](auto const&, auto const& args) {
+            auto s = args.Request().ToString();
+            fprintf(stderr, "Web resource requested! %S\n", s.c_str());
+        });
+
 		bool saved_fullscreen = false;
 		RECT saved_rect;
 		LONG saved_style = -1;
