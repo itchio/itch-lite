@@ -42,11 +42,8 @@ build-windows-amd64:
 
 deploy-itchio:
   stage: deploy
-  when: manual
   tags:
     - linux
-  only:
-    - tags
   script:
     - release/ci-deploy.sh
   dependencies:

@@ -27,7 +27,7 @@ ${TOOLS_DIR}/butler -V
 pushd broth
 for i in *; do
     CHANNEL_NAME="${i}${CHANNEL_SUFFIX}"
-    ${TOOLS_DIR}/butler push --userversion "${USER_VERSION}" ./$i "itch-test-account/butler:${CHANNEL_NAME}"
+    ${TOOLS_DIR}/butler push --userversion "${USER_VERSION}" ./$i "fasterthanlime/itch-lite:${CHANNEL_NAME}"
 done
 popd
 
