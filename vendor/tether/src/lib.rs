@@ -2,7 +2,7 @@
 
 //! Windows that are web views.
 
-mod raw;
+pub mod raw;
 
 use log::error;
 use std::cell::{Cell, RefCell};
