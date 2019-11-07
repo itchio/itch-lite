@@ -2,6 +2,8 @@
 
 //! Windows that are web views.
 
+mod raw;
+
 use log::error;
 use std::cell::{Cell, RefCell};
 use std::ffi::{c_void, CStr, CString};
@@ -68,13 +70,13 @@ impl Window {
         let raw = unsafe { raw::tether_new(opts) };
         this.data.replace(Some(raw));
 
-        unsafe extern fn closed(data: *mut c_void) {
+        unsafe extern "C" fn closed(data: *mut c_void) {
             abort_on_panic(|| {
                 let _ = Box::<Data>::from_raw(data as _);
             });
         }
 
-        unsafe extern fn message(data: *mut c_void, message: *const i8) {
+        unsafe extern "C" fn message(data: *mut c_void, message: *const i8) {
             abort_on_panic(|| {
                 let data = data as *mut Data;
 
@@ -202,7 +204,7 @@ pub unsafe fn start(cb: fn()) {
     static mut INIT: Option<fn()> = None;
     INIT = Some(cb);
 
-    unsafe extern fn init() {
+    unsafe extern "C" fn init() {
         abort_on_panic(|| {
             MAIN_THREAD.with(|initialized| {
                 initialized.set(true);
@@ -231,13 +233,10 @@ pub fn dispatch<F: FnOnce() + Send>(f: F) {
     assert_initialized();
 
     unsafe {
-        raw::tether_dispatch(
-            Box::<F>::into_raw(Box::new(f)) as _,
-            Some(execute::<F>),
-        );
+        raw::tether_dispatch(Box::<F>::into_raw(Box::new(f)) as _, Some(execute::<F>));
     }
 
-    unsafe extern fn execute<F: FnOnce() + Send>(data: *mut c_void) {
+    unsafe extern "C" fn execute<F: FnOnce() + Send>(data: *mut c_void) {
         abort_on_panic(|| {
             Box::<F>::from_raw(data as _)();
         });
@@ -264,9 +263,4 @@ fn assert_main() {
 
 fn string_to_cstring<I: Into<String>>(s: I) -> CString {
     CString::new(s.into()).unwrap()
-}
-
-mod raw {
-    #![allow(dead_code, nonstandard_style)]
-    include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }

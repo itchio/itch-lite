@@ -1,6 +1,12 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+// !!!
+// This should be kept in sync with "src/raw.rs"
+//
+// Doing so manually avoids the dependency on "bindgen"
+// !!!
+
 //TODO: Make sure the HTML5 Fullscreen API works.
 //TODO: File picker.
 //TODO: Implement the HTML5 Notification API.

@@ -1,6 +1,6 @@
-use std::{env, io};
 use std::path::PathBuf;
 use std::process::Command;
+use std::{env, io};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let out_path = PathBuf::from(env::var("OUT_DIR")?);
@@ -61,13 +61,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .compile("tether");
     }
 
-    // Generate the bindings to the library.
-
-    bindgen::Builder::default()
-        .header("tether.h")
-        .generate()
-        .map_err(|()| io::Error::new(io::ErrorKind::Other, "bindgen failed"))?
-        .write_to_file(out_path.join("bindings.rs"))?;
+    // N.B: bindings used to be generated with bindgen,
+    // now they're kept in sync manually, see `src/raw.rs`
 
     Ok(())
 }
@@ -76,9 +71,11 @@ fn sh(script: &str) -> io::Result<String> {
     Command::new("sh")
         .args(&["-c", script])
         .output()
-        .and_then(|o| if o.status.success() {
-            Ok(String::from_utf8_lossy(&o.stdout).into())
-        } else {
-            Err(io::Error::new(io::ErrorKind::Other, "script failed"))
+        .and_then(|o| {
+            if o.status.success() {
+                Ok(String::from_utf8_lossy(&o.stdout).into())
+            } else {
+                Err(io::Error::new(io::ErrorKind::Other, "script failed"))
+            }
         })
 }
