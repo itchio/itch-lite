@@ -28,7 +28,7 @@ pub trait Handler: 'static {
     }
 
     /// A request was made, and it can be intercepted
-    fn handle_net(&mut self, req: NetRequest) -> Result<(), Box<dyn std::error::Error>> {
+    fn handle_net(&mut self, _req: NetRequest) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }
 }

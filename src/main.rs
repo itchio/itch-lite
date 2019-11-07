@@ -14,6 +14,19 @@ impl tether::Handler for Handler {
 
     fn handle_net(&mut self, req: tether::NetRequest) -> Result<(), Box<dyn std::error::Error>> {
         println!("[net] requesting {}", req.uri());
+
+        if req.uri().find("127.0.0.1").is_some() {
+            println!("intercepting request!");
+
+            let s = "hello from itch-lite";
+            req.respond(tether::NetResponse {
+                status_code: 200,
+                content: s.as_bytes(),
+            });
+        } else {
+            println!("letting request through");
+        }
+
         Ok(())
     }
 }
