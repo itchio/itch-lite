@@ -3,7 +3,6 @@ use std::process::Command;
 use std::{env, io};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let out_path = PathBuf::from(env::var("OUT_DIR")?);
     let rust_path = env::current_dir()?;
     let native_path = rust_path.join("native");
 
