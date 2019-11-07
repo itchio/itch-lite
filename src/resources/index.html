@@ -19,14 +19,22 @@
             height: 100%;
         }
     </style>
+
+    <script>
+        window.testMessage = () => {
+            tether("Oh yes.");
+        };
+    </script>
 </head>
 
 <body>
     <p>There's your native app:</p>
 
-    <div class="iframe-container">
+    <!--  <div class="iframe-container">
         <iframe src="http://useragentstring.com/"></iframe>
-    </div>
+    </div>  -->
+
+    <button onclick="testMessage()">Send message</button>
 
     <p>Did you like it?</p>
 </body>

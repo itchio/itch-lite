@@ -1,17 +1,33 @@
-use web_view::WebViewBuilder;
+struct Handler {}
+
+impl Drop for Handler {
+    fn drop(&mut self) {
+        println!("Exiting");
+        tether::exit();
+    }
+}
+
+impl tether::Handler for Handler {
+    fn handle(&mut self, _window: tether::Window, msg: &str) {
+        println!("Received: {}", msg);
+    }
+}
 
 fn main() {
-    let app = WebViewBuilder::new()
-        .title("itch lite")
-        .content(web_view::Content::Html(include_str!(
-            "./resources/index.html"
-        )))
-        .size(1280, 720)
-        .resizable(true)
-        .debug(true)
-        .user_data(())
-        .invoke_handler(|_webview, _arg| Ok(()))
-        .build()
-        .unwrap();
-    app.run().unwrap();
+    unsafe {
+        tether::start(start);
+    }
+}
+
+fn start() {
+    let win = tether::Window::new(tether::Options {
+        debug: true,
+        initial_width: 1280,
+        initial_height: 720,
+        handler: Some(Box::new(Handler {})),
+        ..Default::default()
+    });
+
+    win.title("itch lite");
+    win.load(include_str!("./resources/index.html"));
 }
