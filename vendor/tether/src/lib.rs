@@ -63,12 +63,22 @@ impl Window {
             debug: opts.debug,
 
             data: Box::<Data>::into_raw(Box::new((this.clone(), handler))) as _,
-            closed: Some(closed),
-            message: Some(message),
+            closed: closed,
+            message: message,
+            net_request: net_request,
         };
 
         let raw = unsafe { raw::tether_new(opts) };
         this.data.replace(Some(raw));
+
+        unsafe extern "C" fn net_request(req: *mut raw::tether_net_request) {
+            abort_on_panic(|| {
+                let request_url = CStr::from_ptr((*req).request_url)
+                    .to_str()
+                    .expect("request uri should be valid utf-8");
+                dbg!(request_url);
+            });
+        }
 
         unsafe extern "C" fn closed(data: *mut c_void) {
             abort_on_panic(|| {

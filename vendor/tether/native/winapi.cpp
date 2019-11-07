@@ -92,10 +92,62 @@ struct _tether {
             message(data, s.c_str());
         });
 
+        webview.ContentLoading([=](auto const &, auto const& args) {
+            fprintf(stderr, "ContentLoading\n");
+        });
+        webview.DOMContentLoaded([=](auto const &, auto const& args) {
+            fprintf(stderr, "DOMContentLoaded");
+        });
+        webview.FrameContentLoading([=](auto const &, auto const& args) {
+            fprintf(stderr, "FrameContentLoading\n");
+        });
+        webview.FrameDOMContentLoaded([=](auto const &, auto const& args) {
+            fprintf(stderr, "FrameDOMContentLoaded\n");
+        });
+        webview.FrameNavigationCompleted([=](auto const &, auto const& args) {
+            fprintf(stderr, "FrameNavigationCompleted\n");
+        });
+        webview.FrameNavigationStarting([=](auto const &, auto const& args) {
+            fprintf(stderr, "FrameNavigationStarting\n");
+        });
+        webview.LongRunningScriptDetected([=](auto const &, auto const& args) {
+            fprintf(stderr, "LongRunningScriptDetected\n");
+        });
+        webview.NavigationCompleted([=](auto const &, auto const& args) {
+            fprintf(stderr, "NavigationCompleted\n");
+        });
+        webview.NavigationStarting([=](auto const &, auto const& args) {
+            fprintf(stderr, "NavigationStarted\n");
+        });
+        webview.NewWindowRequested([=](auto const &, auto const& args) {
+            fprintf(stderr, "NewWindowRequested\n");
+        });
+        webview.PermissionRequested([=](auto const &, auto const& args) {
+            fprintf(stderr, "PermissionRequested\n");
+        });
+        webview.UnsafeContentWarningDisplaying([=](auto const &, auto const& args) {
+            fprintf(stderr, "UnsafeContentWarningDisplaying\n");
+        });
+        webview.UnviewableContentIdentified([=](auto const &, auto const& args) {
+            fprintf(stderr, "UnviewableContentIdentified\n");
+        });
+
+        webview.UnsupportedUriSchemeIdentified([=](auto const&, auto const& args) {
+            fprintf(stderr, "Unsupported Uri Scheme Identified!\n");
+            fprintf(stderr, "It was %S\n", args.Uri().ToString().c_str());
+            args.Handled(TRUE);
+        });
+
         webview.WebResourceRequested([=](auto const&, auto const& args) {
             fprintf(stderr, "============================\n");
             fprintf(stderr, "Web resource requested!\n");
             fprintf(stderr, "Request: %S\n", args.Request().ToString().c_str());
+
+            auto uri = winrt::to_string(args.Request().RequestUri().ToString());
+            tether_net_request net_req;
+            net_req.request_url = uri.c_str();
+            net_req.response_set = false;
+            opts.net_request(&net_req);
 
             auto res = HttpResponseMessage();
             res.StatusCode(HttpStatusCode::Ok);

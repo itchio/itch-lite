@@ -37,9 +37,36 @@ pub struct tether_options {
     /// The data to pass to event handlers.
     pub data: *mut c_void,
     /// The window received a message via `window.tether(string)`.
-    pub message: Option<unsafe extern "C" fn(data: *mut c_void, message: *const c_char)>,
+    pub message: unsafe extern "C" fn(data: *mut c_void, message: *const c_char),
     /// The window was closed, and its resources have all been released.
-    pub closed: Option<unsafe extern "C" fn(data: *mut c_void)>,
+    pub closed: unsafe extern "C" fn(data: *mut c_void),
+    /// A network request was made
+    pub net_request: unsafe extern "C" fn(req: *mut tether_net_request),
+}
+
+/// A network request
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct tether_net_request {
+    /// The URL that has been requested
+    pub request_url: *const c_char,
+
+    /// Set to true if 'response' is used.
+    pub response_set: bool,
+
+    /// What to respond with, if 'response_set' is true
+    pub response: tether_net_response,
+}
+
+/// A synthetic network response
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct tether_net_response {
+    /// HTTP status code
+    pub status_code: usize,
+
+    /// Content
+    pub content: *const c_char,
 }
 
 extern "C" {

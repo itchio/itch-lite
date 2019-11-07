@@ -38,9 +38,9 @@
         };
 
         window.testFetch = () => {
-            let p = fetch("https://itch.io/country?t=" + Date.now());
+            let p = fetch("http://127.0.0.1:8080/index.html");
             p.catch(e => {
-                tether("Error: " + e.stack);
+                tether("Error: " + e);
             }).then(res => {
                 return res.text();
             }).then(text => {
