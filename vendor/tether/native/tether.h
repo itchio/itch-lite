@@ -10,21 +10,17 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef struct Option_tether_dispatch_callback Option_tether_dispatch_callback;
-
-typedef struct Option_tether_start_callback Option_tether_start_callback;
-
 /**
  * A reference to a window.
  */
 typedef struct {
     uint8_t _unused[0];
-} _tether;
+} _tether_dummy;
 
 /**
  * Pointer type for tether windows
  */
-typedef _tether *tether;
+typedef struct _tether *tether;
 
 /**
  * Configuration options for a window.
@@ -75,41 +71,41 @@ extern "C" {
 /**
  * Close the window.
  */
-extern void tether_close(tether self_);
+void tether_close(tether self_);
 
 /**
  * Schedule a function to be called on the main thread.
  *
  * All the `tether` functions should only be called on the main thread.
  */
-extern void tether_dispatch(void *data, Option_tether_dispatch_callback func);
+void tether_dispatch(void *data, void (*func)(void *data));
 
 /**
  * Run the given script.
  */
-extern void tether_eval(tether self_, const char *js);
+void tether_eval(tether self_, const char *js);
 
 /**
  * Stop the main loop as gracefully as possible.
  */
-extern void tether_exit(void);
+void tether_exit(void);
 
 /**
  * Focus the window, and move it in front of the other windows.
  *
  * This function will not steal the focus from other applications.
  */
-extern void tether_focus(tether self_);
+void tether_focus(tether self_);
 
 /**
  * Display the given HTML.
  */
-extern void tether_load(tether self_, const char *html);
+void tether_load(tether self_, const char *html);
 
 /**
  * Open a new window with the given options.
  */
-extern tether tether_new(tether_options opts);
+tether tether_new(tether_options opts);
 
 /**
  * Start the main loop and call the given function.
@@ -117,12 +113,12 @@ extern tether tether_new(tether_options opts);
  * This function should be called on the main thread, and at most once. It
  * should be called before any other `tether` function is called.
  */
-extern void tether_start(Option_tether_start_callback func);
+void tether_start(void (*func)(void));
 
 /**
  * Set the window's title.
  */
-extern void tether_title(tether self_, const char *title);
+void tether_title(tether self_, const char *title);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -42,23 +42,20 @@ pub struct tether_options {
     pub closed: Option<unsafe extern "C" fn(data: *mut c_void)>,
 }
 
-/// Callback type for tether application startup.
-pub type tether_start_callback = unsafe extern "C" fn();
-
-/// Callback type for functions that can be scheduled on the "main" thread.
-pub type tether_dispatch_callback = unsafe extern "C" fn(data: *mut c_void);
-
 extern "C" {
     /// Start the main loop and call the given function.
     ///
     /// This function should be called on the main thread, and at most once. It
     /// should be called before any other `tether` function is called.
-    pub fn tether_start(func: Option<tether_start_callback>);
+    pub fn tether_start(func: Option<unsafe extern "C" fn()>);
 
     /// Schedule a function to be called on the main thread.
     ///
     /// All the `tether` functions should only be called on the main thread.
-    pub fn tether_dispatch(data: *mut c_void, func: Option<tether_dispatch_callback>);
+    pub fn tether_dispatch(
+        data: *mut c_void,
+        func: Option<unsafe extern "C" fn(data: *mut c_void)>,
+    );
 
     /// Stop the main loop as gracefully as possible.
     pub fn tether_exit();

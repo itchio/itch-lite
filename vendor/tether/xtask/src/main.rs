@@ -43,6 +43,17 @@ fn bind() {
         .expect("should be able to start cbindgen");
     child.wait().expect("cbindgen should complete successfully");
 
+    {
+        // "fix" cbindgen output to suit our needs
+        let contents = std::fs::read_to_string(&output_path).unwrap();
+        let contents = contents
+            .replace("extern ", "")
+            .replace(r#""C""#, r#"extern "C""#)
+            .replace(" _tether;", " _tether_dummy;")
+            .replace("typedef _tether", "typedef struct _tether");
+        std::fs::write(&output_path, contents).unwrap();
+    }
+
     println!();
     println!("Done generating in {:?}", start.elapsed());
 }

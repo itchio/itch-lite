@@ -1,6 +1,8 @@
 //TODO: Windows currently doesn't show any context menu.
 
 #define WIN32_LEAN_AND_MEAN
+#define UNICODE
+
 #include <sdkddkver.h>
 #include <objbase.h>
 #include <Windows.h>
@@ -18,7 +20,7 @@ using namespace Windows::Web::UI::Interop;
 // RANDOM NONSENSE
 // ===============
 
-const LPCSTR WINDOW_CLASS = "BORING";
+const LPCWSTR WINDOW_CLASS = L"BORING";
 const UINT WM_APP_DISPATCH = WM_APP;
 static DWORD MAIN_THREAD;
 static WebViewControlProcess WEBVIEWS { nullptr };
@@ -43,10 +45,10 @@ Rect getClientRect(HWND hwnd) {
     RECT clientRect;
     GetClientRect(hwnd, &clientRect);
     return Rect(
-        clientRect.left,
-        clientRect.top,
-        clientRect.right - clientRect.left,
-        clientRect.bottom - clientRect.top
+        (float) (clientRect.left),
+        (float) (clientRect.top),
+        (float) (clientRect.right - clientRect.left),
+        (float) (clientRect.bottom - clientRect.top)
     );
 }
 
@@ -64,12 +66,12 @@ struct _tether {
     _tether(tether_options opts): opts(opts) {
         hwnd = CreateWindow(
             WINDOW_CLASS,
-            "",
+            L"",
             opts.borderless ? 0 : WS_OVERLAPPEDWINDOW,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
-            opts.initial_width,
-            opts.initial_height,
+            (int) opts.initial_width,
+            (int) opts.initial_height,
             nullptr,
             nullptr,
             GetModuleHandle(nullptr),
@@ -153,8 +155,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         case WM_GETMINMAXINFO:
             if (window) {
                 LPMINMAXINFO lpMMI = (LPMINMAXINFO)lParam;
-                lpMMI->ptMinTrackSize.x = window->opts.minimum_width;
-                lpMMI->ptMinTrackSize.y = window->opts.minimum_height;
+                lpMMI->ptMinTrackSize.x = (LONG) window->opts.minimum_width;
+                lpMMI->ptMinTrackSize.y = (LONG) window->opts.minimum_height;
                 break;
             }
         default:
@@ -162,6 +164,28 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
     }
 
     return 0;
+}
+
+LPWSTR to_wide(LPCSTR input) {
+    auto input_len = strlen(input);
+
+    auto codepage = CP_UTF8;
+    DWORD flags = 0;
+
+    // N.B: this is in wchars, not bytes
+    auto output_len = MultiByteToWideChar(
+        codepage, flags,
+        input, input_len,
+        NULL, 0
+    );
+
+    auto output = (LPWSTR) calloc(sizeof(WCHAR), output_len);
+    MultiByteToWideChar(
+        codepage, flags,
+        input, input_len,
+        output, output_len
+    );
+    return output;
 }
 
 // ==============
@@ -243,7 +267,9 @@ void tether_load(tether self, const char *html) {
 }
 
 void tether_title(tether self, const char *title) {
-    SetWindowText(self->hwnd, title);
+    auto w_title = to_wide(title);
+    SetWindowText(self->hwnd, w_title);
+    free(w_title);
 }
 
 void tether_focus(tether self) {
