@@ -1,30 +1,32 @@
+use log::*;
+
 struct Handler {}
 
 impl Drop for Handler {
     fn drop(&mut self) {
-        println!("Exiting");
+        info!("Exiting");
         tether::exit();
     }
 }
 
 impl tether::Handler for Handler {
     fn handle_rpc(&mut self, _window: tether::Window, msg: &str) {
-        println!("[rpc] received {}", msg);
+        info!("[rpc] received {}", msg);
     }
 
     fn handle_net(&mut self, req: tether::NetRequest) -> Result<(), Box<dyn std::error::Error>> {
-        println!("[net] requesting {}", req.uri());
+        info!("[net] requesting {}", req.uri());
 
         if req.uri().find("127.0.0.1").is_some() {
-            println!("intercepting request!");
+            info!("intercepting request!");
 
-            let s = "hello from itch-lite";
+            let s = include_str!("./resources/index.html");
             req.respond(tether::NetResponse {
                 status_code: 200,
                 content: s.as_bytes(),
             });
         } else {
-            println!("letting request through");
+            info!("letting request through");
         }
 
         Ok(())
@@ -32,6 +34,11 @@ impl tether::Handler for Handler {
 }
 
 fn main() {
+    let mut builder = env_logger::Builder::new();
+    builder.filter(None, log::LevelFilter::Info).init();
+
+    info!("Starting up!");
+
     unsafe {
         tether::start(start);
     }
@@ -47,5 +54,5 @@ fn start() {
     });
 
     win.title("itch lite");
-    win.load(include_str!("./resources/index.html"));
+    win.navigate("http://127.0.0.1/index.html");
 }

@@ -349,6 +349,11 @@ void tether_load(tether self, const char *html) {
     self->webview.NavigateToString(winrt::to_hstring(html));
 }
 
+void tether_navigate(tether self, const char *c_uri) {
+    auto uri = Uri(winrt::to_hstring(c_uri));
+    self->webview.Navigate(uri);
+}
+
 void tether_title(tether self, const char *title) {
     auto w_title = to_wide(title);
     SetWindowText(self->hwnd, w_title);

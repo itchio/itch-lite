@@ -201,6 +201,16 @@ impl Window {
         }
     }
 
+    /// Load the given URL
+    pub fn navigate<I: Into<String>>(&self, s: I) {
+        if let Some(data) = *self.data.borrow_mut() {
+            let s = string_to_cstring(s);
+            unsafe {
+                raw::tether_navigate(data, s.as_ptr());
+            }
+        }
+    }
+
     /// Set this window's title to the given string.
     pub fn title<I: Into<String>>(&self, s: I) {
         if let Some(data) = *self.data.borrow_mut() {

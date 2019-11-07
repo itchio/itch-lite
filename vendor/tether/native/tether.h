@@ -22,6 +22,9 @@ typedef struct {
  */
 typedef struct _tether *tether;
 
+/**
+ * A network response
+ */
 typedef struct {
     /**
      * The HTTP status code for the response
@@ -98,7 +101,7 @@ typedef struct {
     /**
      * A network request was made
      */
-    void (*net_request)(void *data, tether_net_request *req);
+    void (*net_request)(void *data, const tether_net_request *req);
 } tether_options;
 
 #ifdef __cplusplus
@@ -138,6 +141,11 @@ void tether_focus(tether self_);
  * Display the given HTML.
  */
 void tether_load(tether self_, const char *html);
+
+/**
+ * Display the given URI.
+ */
+void tether_navigate(tether self_, const char *uri);
 
 /**
  * Open a new window with the given options.

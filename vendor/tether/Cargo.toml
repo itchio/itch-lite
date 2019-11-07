@@ -12,6 +12,7 @@ members = ["xtask"]
 
 [dependencies]
 log = "0.4"
+url = "2.1.0"
 
 [build-dependencies]
 cc = "1.0"

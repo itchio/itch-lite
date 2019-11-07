@@ -95,6 +95,9 @@ extern "C" {
     /// Display the given HTML.
     pub fn tether_load(self_: tether, html: *const c_char);
 
+    /// Display the given URI.
+    pub fn tether_navigate(self_: tether, uri: *const c_char);
+
     /// Set the window's title.
     pub fn tether_title(self_: tether, title: *const c_char);
 
