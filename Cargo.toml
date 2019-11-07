@@ -8,4 +8,4 @@ edition = "2018"
 lto = true
 
 [dependencies]
-tether = "0.3.5"
+tether = { path = "./vendor/tether" }
