@@ -8,6 +8,7 @@
 #include <Windows.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Web.UI.Interop.h>
+#include <winrt/Windows.Web.Http.h>
 
 #include "tether.h"
 
@@ -15,6 +16,7 @@ using namespace winrt;
 using namespace Windows::Foundation;
 using namespace Windows::Web::UI;
 using namespace Windows::Web::UI::Interop;
+using namespace Windows::Web::Http;
 
 // ===============
 // RANDOM NONSENSE
@@ -91,8 +93,16 @@ struct _tether {
         });
 
         webview.WebResourceRequested([=](auto const&, auto const& args) {
-            auto s = args.Request().ToString();
-            fprintf(stderr, "Web resource requested! %S\n", s.c_str());
+            fprintf(stderr, "============================\n");
+            fprintf(stderr, "Web resource requested!\n");
+            fprintf(stderr, "Request: %S\n", args.Request().ToString().c_str());
+
+            auto res = HttpResponseMessage();
+            res.StatusCode(HttpStatusCode::Ok);
+            res.Content(HttpStringContent(winrt::to_hstring("testing testing")));
+            args.Response(res);
+
+            fprintf(stderr, "============================\n");
         });
 
 		bool saved_fullscreen = false;

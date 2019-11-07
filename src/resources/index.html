@@ -6,6 +6,14 @@
     <meta charset="utf-8" />
     <title>itch lite</title>
     <style>
+        html,
+        body {
+            background: #111;
+            color: #aaa;
+            font-family: 'Lato', sans-serif;
+            font-size: 16px;
+        }
+
         .iframe-container {
             border: 2px solid #333;
             border-radius: 4px;
@@ -28,6 +36,17 @@
         window.testNavigate = () => {
             window.location = "https://example.org";
         };
+
+        window.testFetch = () => {
+            let p = fetch("https://itch.io/country?t=" + Date.now());
+            p.catch(e => {
+                tether("Error: " + e.stack);
+            }).then(res => {
+                return res.text();
+            }).then(text => {
+                tether("Result: " + text);
+            });
+        };
     </script>
 </head>
 
@@ -38,6 +57,7 @@
 
     <button onclick="testMessage()">Send message</button>
     <button onclick="testNavigate()">Navigate away!</button>
+    <button onclick="testFetch()">Fetch something!</button>
 
     <p>Did you like it?</p>
 </body>
