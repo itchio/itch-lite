@@ -10,6 +10,7 @@ use std::ffi::{c_void, CStr, CString};
 use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::{panic, process};
+use url::Url;
 
 thread_local! {
     static MAIN_THREAD: Cell<bool> = Cell::new(false);
@@ -37,15 +38,15 @@ pub trait Handler: 'static {
 /// XMLHTTPRequest, a fetch(), an img src, anything
 pub struct NetRequest<'a> {
     /// The URI that was requested by the webview
-    request_uri: &'a str,
+    url: Url,
     /// The underlying raw request
     req: &'a raw::tether_net_request,
 }
 
 impl<'a> NetRequest<'a> {
     /// Returns the URI that was requested by the webview
-    pub fn uri(&self) -> &str {
-        self.request_uri
+    pub fn url(&self) -> &Url {
+        &self.url
     }
 
     /// Set the response for this request. bypassing the
@@ -59,10 +60,9 @@ impl<'a> NetRequest<'a> {
     unsafe fn from_raw(
         req: &'a raw::tether_net_request,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        Ok(Self {
-            request_uri: CStr::from_ptr(req.request_uri).to_str()?,
-            req,
-        })
+        let request_uri = CStr::from_ptr(req.request_uri).to_str()?;
+        let url = Url::parse(request_uri)?;
+        Ok(Self { url, req })
     }
 }
 

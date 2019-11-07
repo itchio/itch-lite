@@ -15,18 +15,41 @@ impl tether::Handler for Handler {
     }
 
     fn handle_net(&mut self, req: tether::NetRequest) -> Result<(), Box<dyn std::error::Error>> {
-        info!("[net] requesting {}", req.uri());
+        let url = req.url();
+        info!("[net] requesting {:?}", url);
 
-        if req.uri().find("127.0.0.1").is_some() {
-            info!("intercepting request!");
+        match url.host_str() {
+            Some("itch-lite") => {
+                info!("intercepting request!");
 
-            let s = include_str!("./resources/index.html");
-            req.respond(tether::NetResponse {
-                status_code: 200,
-                content: s.as_bytes(),
-            });
-        } else {
-            info!("letting request through");
+                let path = url.path();
+                let path = percent_encoding::percent_decode(path.as_bytes()).decode_utf8()?;
+                let path = path.trim_start_matches("/");
+                info!("path = {:?}", path);
+
+                let file_path = std::path::PathBuf::from("src").join("resources").join(path);
+                info!("file_path = {:?}", file_path);
+
+                match std::fs::read(file_path) {
+                    Ok(f) => {
+                        req.respond(tether::NetResponse {
+                            status_code: 200,
+                            content: &f[..],
+                        });
+                        return Ok(());
+                    }
+                    Err(_) => {
+                        req.respond(tether::NetResponse {
+                            status_code: 404,
+                            content: "not found".as_bytes(),
+                        });
+                        return Ok(());
+                    }
+                }
+            }
+            _ => {
+                info!("letting request through");
+            }
         }
 
         Ok(())
@@ -54,5 +77,5 @@ fn start() {
     });
 
     win.title("itch lite");
-    win.navigate("http://127.0.0.1/index.html");
+    win.navigate("http://itch-lite/index.html");
 }

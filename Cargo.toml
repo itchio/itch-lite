@@ -11,3 +11,4 @@ lto = true
 tether = { path = "./vendor/tether" }
 env_logger = "0.7.1"
 log = "0.4.8"
+percent-encoding = "2.1.0"
