@@ -41,22 +41,31 @@ pub struct tether_options {
     /// The window was closed, and its resources have all been released.
     pub closed: unsafe extern "C" fn(data: *mut c_void),
     /// A network request was made
-    pub net_request: unsafe extern "C" fn(req: *mut tether_net_request),
+    pub net_request: unsafe extern "C" fn(data: *mut c_void, req: *const tether_net_request),
 }
 
 /// A network request
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct tether_net_request {
-    /// The URL that has been requested
-    pub request_url: *const c_char,
-
+    /// The URI that has been requested
+    pub request_uri: *const c_char,
     /// Closure context for respond
     pub respond_ctx: *const c_void,
-
     /// What to respond with, if 'response_set' is true
-    pub respond:
-        unsafe extern "C" fn(ctx: *const c_void, status_code: usize, content: *const c_char),
+    pub respond: unsafe extern "C" fn(ctx: *const c_void, res: *const tether_net_response),
+}
+
+/// A network response
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct tether_net_response {
+    /// The HTTP status code for the response
+    pub status_code: usize,
+    /// The contents of the response.
+    pub content: *const u8,
+    /// Length of the contents of the response (in bytes).
+    pub content_length: usize,
 }
 
 extern "C" {

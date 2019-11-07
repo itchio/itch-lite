@@ -21,7 +21,7 @@ fn start() {
 struct Handler(pub usize);
 
 impl tether::Handler for Handler {
-    fn handle(&mut self, window: Window, msg: &str) {
+    fn handle_rpc(&mut self, window: Window, msg: &str) {
         println!("{}", msg);
 
         self.0 += 1;

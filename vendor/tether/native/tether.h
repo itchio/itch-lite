@@ -22,14 +22,29 @@ typedef struct {
  */
 typedef struct _tether *tether;
 
+typedef struct {
+    /**
+     * The HTTP status code for the response
+     */
+    uintptr_t status_code;
+    /**
+     * The contents of the response.
+     */
+    const uint8_t *content;
+    /**
+     * Length of the contents of the response (in bytes).
+     */
+    uintptr_t content_length;
+} tether_net_response;
+
 /**
  * A network request
  */
 typedef struct {
     /**
-     * The URL that has been requested
+     * The URI that has been requested
      */
-    const char *request_url;
+    const char *request_uri;
     /**
      * Closure context for respond
      */
@@ -37,7 +52,7 @@ typedef struct {
     /**
      * What to respond with, if 'response_set' is true
      */
-    void (*respond)(const void *ctx, uintptr_t status_code, const char *content);
+    void (*respond)(const void *ctx, const tether_net_response *res);
 } tether_net_request;
 
 /**
@@ -83,7 +98,7 @@ typedef struct {
     /**
      * A network request was made
      */
-    void (*net_request)(tether_net_request *req);
+    void (*net_request)(void *data, tether_net_request *req);
 } tether_options;
 
 #ifdef __cplusplus

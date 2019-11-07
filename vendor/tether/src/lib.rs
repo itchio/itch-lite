@@ -23,14 +23,66 @@ static INITIALIZED: AtomicBool = AtomicBool::new(false);
 /// - The handler is dropped when the window is closed.
 pub trait Handler: 'static {
     /// The webpage called `window.tether` with the given string.
-    fn handle(&mut self, window: Window, message: &str) {
+    fn handle_rpc(&mut self, window: Window, message: &str) {
         let _ = (window, message);
+    }
+
+    /// A request was made, and it can be intercepted
+    fn handle_net(&mut self, req: NetRequest) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
     }
 }
 
-impl<F: FnMut(Window, &str) + 'static> Handler for F {
-    fn handle(&mut self, window: Window, message: &str) {
-        (self)(window, message)
+/// A network request made by the webview - could be a page load, an
+/// XMLHTTPRequest, a fetch(), an img src, anything
+pub struct NetRequest<'a> {
+    /// The URI that was requested by the webview
+    request_uri: &'a str,
+    /// The underlying raw request
+    req: &'a raw::tether_net_request,
+}
+
+impl<'a> NetRequest<'a> {
+    /// Returns the URI that was requested by the webview
+    pub fn uri(&self) -> &str {
+        self.request_uri
+    }
+
+    /// Set the response for this request. bypassing the
+    /// regular network stack.
+    pub fn respond(self, res: NetResponse) {
+        let res = res.into_raw();
+        unsafe { (self.req.respond)(self.req.respond_ctx, &res) };
+    }
+
+    /// Create a NetRequest instance from its raw counterpart.
+    unsafe fn from_raw(
+        req: &'a raw::tether_net_request,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self {
+            request_uri: CStr::from_ptr(req.request_uri).to_str()?,
+            req,
+        })
+    }
+}
+
+/// A network response
+pub struct NetResponse<'a> {
+    /// Contents of the response
+    pub content: &'a [u8],
+
+    /// The HTTP status code
+    pub status_code: usize,
+}
+
+impl<'a> NetResponse<'a> {
+    // TODO: figure out a way to tie those lifetimes
+    fn into_raw(&self) -> raw::tether_net_response {
+        raw::tether_net_response {
+            content: self.content.as_ptr(),
+            content_length: self.content.len(),
+            status_code: self.status_code,
+        }
     }
 }
 
@@ -40,7 +92,10 @@ pub struct Window {
     data: Rc<RefCell<Option<raw::tether>>>,
 }
 
-type Data = (Window, Box<dyn Handler>);
+struct Data {
+    win: Window,
+    handler: Option<Box<dyn Handler>>,
+}
 
 impl Window {
     /// Make a new window with the given options.
@@ -51,7 +106,7 @@ impl Window {
             data: Rc::new(RefCell::new(None)),
         };
 
-        let handler = opts.handler.unwrap_or(Box::new(|_, _: &_| {}));
+        let handler = opts.handler;
 
         let opts = raw::tether_options {
             initial_width: opts.initial_width,
@@ -62,7 +117,10 @@ impl Window {
             borderless: opts.borderless,
             debug: opts.debug,
 
-            data: Box::<Data>::into_raw(Box::new((this.clone(), handler))) as _,
+            data: Box::<Data>::into_raw(Box::new(Data {
+                win: this.clone(),
+                handler,
+            })) as _,
             closed: closed,
             message: message,
             net_request: net_request,
@@ -71,24 +129,21 @@ impl Window {
         let raw = unsafe { raw::tether_new(opts) };
         this.data.replace(Some(raw));
 
-        unsafe extern "C" fn net_request(req: *mut raw::tether_net_request) {
-            abort_on_panic(|| {
-                // FIXME: never panic (if we can help it)
-                let request_url = CStr::from_ptr((*req).request_url)
-                    .to_str()
-                    .expect("request uri should be valid utf-8");
-                dbg!(request_url);
+        unsafe extern "C" fn net_request(data: *mut c_void, c_req: *const raw::tether_net_request) {
+            let process = || -> Result<(), Box<dyn std::error::Error>> {
+                let data = data as *mut Data;
 
-                let content = std::ffi::CString::new("Hello from rust").unwrap();
-                dbg!("Calling respond...");
-                ((*req).respond)((*req).respond_ctx, 200, content.as_ptr());
-                dbg!("Returned from respond...");
-            });
-        }
+                if let Some(handler) = (*data).handler.as_mut() {
+                    let req = NetRequest::from_raw(&*c_req)?;
+                    handler.handle_net(req)?;
+                }
 
-        unsafe extern "C" fn closed(data: *mut c_void) {
-            abort_on_panic(|| {
-                let _ = Box::<Data>::from_raw(data as _);
+                Ok(())
+            };
+
+            abort_on_panic(|| match process() {
+                Err(e) => error!("{}", e),
+                _ => {} // good!
             });
         }
 
@@ -96,14 +151,22 @@ impl Window {
             abort_on_panic(|| {
                 let data = data as *mut Data;
 
-                match CStr::from_ptr(message).to_str() {
-                    Ok(message) => {
-                        (*data).1.handle((*data).0.clone(), message);
-                    }
-                    Err(e) => {
-                        error!("{}", e);
+                if let Some(handler) = (*data).handler.as_mut() {
+                    match CStr::from_ptr(message).to_str() {
+                        Ok(message) => {
+                            handler.handle_rpc((*data).win.clone(), message);
+                        }
+                        Err(e) => {
+                            error!("{}", e);
+                        }
                     }
                 }
+            });
+        }
+
+        unsafe extern "C" fn closed(data: *mut c_void) {
+            abort_on_panic(|| {
+                let _ = Box::<Data>::from_raw(data as _);
             });
         }
 

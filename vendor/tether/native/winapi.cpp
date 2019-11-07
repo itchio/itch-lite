@@ -9,6 +9,8 @@
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Web.UI.Interop.h>
 #include <winrt/Windows.Web.Http.h>
+#include <winrt/Windows.Security.Cryptography.h>
+#include <winrt/Windows.Security.Cryptography.h>
 
 #include "tether.h"
 
@@ -17,6 +19,7 @@ using namespace Windows::Foundation;
 using namespace Windows::Web::UI;
 using namespace Windows::Web::UI::Interop;
 using namespace Windows::Web::Http;
+using namespace Windows::Security::Cryptography;
 
 // ===============
 // RANDOM NONSENSE
@@ -64,15 +67,17 @@ struct RespondCtx {
     const WebViewControlWebResourceRequestedEventArgs *args;
 };
 
-static void _tether_respond(const void *vctx, uintptr_t status_code, const char *content) {
-    fprintf(stderr, "In _tether_respond...\n");
+static void _tether_respond(const void *vctx, const tether_net_response *tres) {
     auto ctx = (RespondCtx*) vctx;
 
     auto res = HttpResponseMessage();
-    res.StatusCode(HttpStatusCode(status_code));
-    res.Content(HttpStringContent(winrt::to_hstring(content)));
+    res.StatusCode(HttpStatusCode(tres->status_code));
+
+    auto array_view = winrt::array_view(&tres->content[0], &tres->content[tres->content_length]);
+    auto byte_array = CryptographicBuffer::CreateFromByteArray(array_view);
+    res.Content(HttpBufferContent(byte_array));
+
     ctx->args->Response(res);
-    fprintf(stderr, "Leaving _tether_respond...\n");
 }
 
 struct _tether {
@@ -102,54 +107,55 @@ struct _tether {
         webview.AddInitializeScript(L"window.tether = function (s) { window.external.notify(s); };");
         auto data = opts.data;
         auto message = opts.message;
+        auto net_request = opts.net_request;
         webview.ScriptNotify([=](auto const&, auto const& args) {
             std::string s = winrt::to_string(args.Value());
             message(data, s.c_str());
         });
 
         webview.ContentLoading([=](auto const &, auto const& args) {
-            fprintf(stderr, "ContentLoading\n");
+            fprintf(stderr, "[webview-event] ContentLoading\n");
         });
         webview.DOMContentLoaded([=](auto const &, auto const& args) {
-            fprintf(stderr, "DOMContentLoaded");
+            fprintf(stderr, "[webview-event] DOMContentLoaded");
         });
         webview.FrameContentLoading([=](auto const &, auto const& args) {
-            fprintf(stderr, "FrameContentLoading\n");
+            fprintf(stderr, "[webview-event] FrameContentLoading\n");
         });
         webview.FrameDOMContentLoaded([=](auto const &, auto const& args) {
-            fprintf(stderr, "FrameDOMContentLoaded\n");
+            fprintf(stderr, "[webview-event] FrameDOMContentLoaded\n");
         });
         webview.FrameNavigationCompleted([=](auto const &, auto const& args) {
-            fprintf(stderr, "FrameNavigationCompleted\n");
+            fprintf(stderr, "[webview-event] FrameNavigationCompleted\n");
         });
         webview.FrameNavigationStarting([=](auto const &, auto const& args) {
-            fprintf(stderr, "FrameNavigationStarting\n");
+            fprintf(stderr, "[webview-event] FrameNavigationStarting\n");
         });
         webview.LongRunningScriptDetected([=](auto const &, auto const& args) {
-            fprintf(stderr, "LongRunningScriptDetected\n");
+            fprintf(stderr, "[webview-event] LongRunningScriptDetected\n");
         });
         webview.NavigationCompleted([=](auto const &, auto const& args) {
-            fprintf(stderr, "NavigationCompleted\n");
+            fprintf(stderr, "[webview-event] NavigationCompleted\n");
         });
         webview.NavigationStarting([=](auto const &, auto const& args) {
-            fprintf(stderr, "NavigationStarted\n");
+            fprintf(stderr, "[webview-event] NavigationStarted\n");
         });
         webview.NewWindowRequested([=](auto const &, auto const& args) {
-            fprintf(stderr, "NewWindowRequested\n");
+            fprintf(stderr, "[webview-event] NewWindowRequested\n");
         });
         webview.PermissionRequested([=](auto const &, auto const& args) {
-            fprintf(stderr, "PermissionRequested\n");
+            fprintf(stderr, "[webview-event] PermissionRequested\n");
         });
         webview.UnsafeContentWarningDisplaying([=](auto const &, auto const& args) {
-            fprintf(stderr, "UnsafeContentWarningDisplaying\n");
+            fprintf(stderr, "[webview-event] UnsafeContentWarningDisplaying\n");
         });
         webview.UnviewableContentIdentified([=](auto const &, auto const& args) {
-            fprintf(stderr, "UnviewableContentIdentified\n");
+            fprintf(stderr, "[webview-event] UnviewableContentIdentified\n");
         });
 
         webview.UnsupportedUriSchemeIdentified([=](auto const&, auto const& args) {
-            fprintf(stderr, "Unsupported Uri Scheme Identified!\n");
-            fprintf(stderr, "It was %S\n", args.Uri().ToString().c_str());
+            fprintf(stderr, "[webview-event] Unsupported Uri Scheme Identified!\n");
+            fprintf(stderr, "[webview-event] It was %S\n", args.Uri().ToString().c_str());
             args.Handled(TRUE);
         });
 
@@ -160,56 +166,54 @@ struct _tether {
             ctx.args = &args;
 
             tether_net_request net_req;
-            net_req.request_url = uri.c_str();
+            net_req.request_uri = uri.c_str();
             net_req.respond_ctx = &ctx;
             net_req.respond = _tether_respond;
 
-            fprintf(stderr, "Invoking rust...\n");
-            opts.net_request(&net_req);
-            fprintf(stderr, "Back from rust...\n");
+            net_request(data, &net_req);
         });
 
-		bool saved_fullscreen = false;
-		RECT saved_rect;
-		LONG saved_style = -1;
-		webview.ContainsFullScreenElementChanged([=](auto const &sender, auto const &) mutable {
-			bool fullscreen = sender.ContainsFullScreenElement();
-			if (fullscreen == saved_fullscreen) return;
-			saved_fullscreen = fullscreen;
+        bool saved_fullscreen = false;
+        RECT saved_rect;
+        LONG saved_style = -1;
+        webview.ContainsFullScreenElementChanged([=](auto const &sender, auto const &) mutable {
+            bool fullscreen = sender.ContainsFullScreenElement();
+            if (fullscreen == saved_fullscreen) return;
+            saved_fullscreen = fullscreen;
 
-			if (sender.ContainsFullScreenElement()) {
-				// Save the window position and size and stuff so we can restore it later.
-				GetWindowRect(hwnd, &saved_rect);
-				saved_style = GetWindowLong(hwnd, GWL_STYLE);
-				// Enter fullscreen mode.
-				SetWindowLong(hwnd, GWL_STYLE, saved_style & ~(WS_CAPTION | WS_THICKFRAME));
-				MONITORINFO mi;
-				mi.cbSize = sizeof mi;
-				GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi);
-				RECT screen_rect = mi.rcMonitor;
-				SetWindowPos(
-					hwnd,
-					HWND_TOP,
-					screen_rect.left,
-					screen_rect.top,
-					screen_rect.right - screen_rect.left,
-					screen_rect.bottom - screen_rect.top,
-					SWP_FRAMECHANGED
-				);
-			} else {
-				// Exit fullscreen mode, restoring the window's properties.
-				SetWindowLong(hwnd, GWL_STYLE, saved_style);
-				SetWindowPos(
-					hwnd,
-					HWND_TOP,
-					saved_rect.left,
-					saved_rect.top,
-					saved_rect.right - saved_rect.left,
-					saved_rect.bottom - saved_rect.top,
-					SWP_FRAMECHANGED
-				);
-			}
-		});
+            if (sender.ContainsFullScreenElement()) {
+                // Save the window position and size and stuff so we can restore it later.
+                GetWindowRect(hwnd, &saved_rect);
+                saved_style = GetWindowLong(hwnd, GWL_STYLE);
+                // Enter fullscreen mode.
+                SetWindowLong(hwnd, GWL_STYLE, saved_style & ~(WS_CAPTION | WS_THICKFRAME));
+                MONITORINFO mi;
+                mi.cbSize = sizeof mi;
+                GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mi);
+                RECT screen_rect = mi.rcMonitor;
+                SetWindowPos(
+                    hwnd,
+                    HWND_TOP,
+                    screen_rect.left,
+                    screen_rect.top,
+                    screen_rect.right - screen_rect.left,
+                    screen_rect.bottom - screen_rect.top,
+                    SWP_FRAMECHANGED
+                );
+            } else {
+                // Exit fullscreen mode, restoring the window's properties.
+                SetWindowLong(hwnd, GWL_STYLE, saved_style);
+                SetWindowPos(
+                    hwnd,
+                    HWND_TOP,
+                    saved_rect.left,
+                    saved_rect.top,
+                    saved_rect.right - saved_rect.left,
+                    saved_rect.bottom - saved_rect.top,
+                    SWP_FRAMECHANGED
+                );
+            }
+        });
 
         ShowWindow(hwnd, SW_SHOW);
         UpdateWindow(hwnd);

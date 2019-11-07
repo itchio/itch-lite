@@ -22,6 +22,22 @@
             margin: 20px auto;
         }
 
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            align-items: start;
+        }
+
+        .buttons button {
+            border: 4px solid #aaa;
+            border-radius: 4px;
+            background: #333;
+            color: white;
+            margin: 10px;
+            padding: 8px 16px;
+            font-size: 20px;
+        }
+
         iframe {
             width: 100%;
             height: 100%;
@@ -37,29 +53,43 @@
             window.location = "https://example.org";
         };
 
-        window.testFetch = () => {
-            let p = fetch("http://127.0.0.1:8080/index.html");
+        function testFetch(url) {
+            let p = fetch(url);
             p.catch(e => {
-                tether("Error: " + e);
+                tether(`Fetch ${url} error ${e}`);
             }).then(res => {
                 return res.text();
             }).then(text => {
-                tether("Result: " + text);
+                tether(`Fetch ${url} result ${text}`);
             });
+        }
+
+        window.testFetchLocalhost = () => {
+            testFetch("http://127.0.0.1:8080/index.html")
+        };
+
+        window.testFetchRemote = () => {
+            var i = document.createElement("img");
+            i.src = "http://example.org";
         };
     </script>
 </head>
 
 <body>
-    <p>There's your native app:</p>
+    <p>Here's an image</p>
 
-    <img src="https://img.itch.zone/aW1nLzI2NTUzODEucG5n/300x240%23c/6%2B4W1J.png">
+    <p>
+        <img src="https://img.itch.zone/aW1nLzI2NTUzODEucG5n/300x240%23c/6%2B4W1J.png">
+    </p>
 
-    <button onclick="testMessage()">Send message</button>
-    <button onclick="testNavigate()">Navigate away!</button>
-    <button onclick="testFetch()">Fetch something!</button>
+    <p>And some buttons:</p>
 
-    <p>Did you like it?</p>
+    <div class="buttons">
+        <button onclick="testMessage()">Send message</button>
+        <button onclick="testNavigate()">Navigate away</button>
+        <button onclick="testFetchLocalhost()">Fetch localhost</button>
+        <button onclick="testFetchRemote()">Fetch remote</button>
+    </div>
 </body>
 
 </html>

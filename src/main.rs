@@ -8,8 +8,13 @@ impl Drop for Handler {
 }
 
 impl tether::Handler for Handler {
-    fn handle(&mut self, _window: tether::Window, msg: &str) {
-        println!("Received: {}", msg);
+    fn handle_rpc(&mut self, _window: tether::Window, msg: &str) {
+        println!("[rpc] received {}", msg);
+    }
+
+    fn handle_net(&mut self, req: tether::NetRequest) -> Result<(), Box<dyn std::error::Error>> {
+        println!("[net] requesting {}", req.uri());
+        Ok(())
     }
 }
 
