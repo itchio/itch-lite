@@ -73,10 +73,16 @@ impl Window {
 
         unsafe extern "C" fn net_request(req: *mut raw::tether_net_request) {
             abort_on_panic(|| {
+                // FIXME: never panic (if we can help it)
                 let request_url = CStr::from_ptr((*req).request_url)
                     .to_str()
                     .expect("request uri should be valid utf-8");
                 dbg!(request_url);
+
+                let content = std::ffi::CString::new("Hello from rust").unwrap();
+                dbg!("Calling respond...");
+                ((*req).respond)((*req).respond_ctx, 200, content.as_ptr());
+                dbg!("Returned from respond...");
             });
         }
 

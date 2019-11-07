@@ -51,22 +51,12 @@ pub struct tether_net_request {
     /// The URL that has been requested
     pub request_url: *const c_char,
 
-    /// Set to true if 'response' is used.
-    pub response_set: bool,
+    /// Closure context for respond
+    pub respond_ctx: *const c_void,
 
     /// What to respond with, if 'response_set' is true
-    pub response: tether_net_response,
-}
-
-/// A synthetic network response
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct tether_net_response {
-    /// HTTP status code
-    pub status_code: usize,
-
-    /// Content
-    pub content: *const c_char,
+    pub respond:
+        unsafe extern "C" fn(ctx: *const c_void, status_code: usize, content: *const c_char),
 }
 
 extern "C" {

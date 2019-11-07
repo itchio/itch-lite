@@ -60,6 +60,21 @@ struct Dispatch {
     void (*func)(void *data);
 };
 
+struct RespondCtx {
+    const WebViewControlWebResourceRequestedEventArgs *args;
+};
+
+static void _tether_respond(const void *vctx, uintptr_t status_code, const char *content) {
+    fprintf(stderr, "In _tether_respond...\n");
+    auto ctx = (RespondCtx*) vctx;
+
+    auto res = HttpResponseMessage();
+    res.StatusCode(HttpStatusCode(status_code));
+    res.Content(HttpStringContent(winrt::to_hstring(content)));
+    ctx->args->Response(res);
+    fprintf(stderr, "Leaving _tether_respond...\n");
+}
+
 struct _tether {
     HWND hwnd;
     WebViewControl webview = nullptr;
@@ -139,22 +154,19 @@ struct _tether {
         });
 
         webview.WebResourceRequested([=](auto const&, auto const& args) {
-            fprintf(stderr, "============================\n");
-            fprintf(stderr, "Web resource requested!\n");
-            fprintf(stderr, "Request: %S\n", args.Request().ToString().c_str());
-
             auto uri = winrt::to_string(args.Request().RequestUri().ToString());
+
+            RespondCtx ctx;
+            ctx.args = &args;
+
             tether_net_request net_req;
             net_req.request_url = uri.c_str();
-            net_req.response_set = false;
+            net_req.respond_ctx = &ctx;
+            net_req.respond = _tether_respond;
+
+            fprintf(stderr, "Invoking rust...\n");
             opts.net_request(&net_req);
-
-            auto res = HttpResponseMessage();
-            res.StatusCode(HttpStatusCode::Ok);
-            res.Content(HttpStringContent(winrt::to_hstring("testing testing")));
-            args.Response(res);
-
-            fprintf(stderr, "============================\n");
+            fprintf(stderr, "Back from rust...\n");
         });
 
 		bool saved_fullscreen = false;
@@ -345,4 +357,8 @@ void tether_focus(tether self) {
 
 void tether_close(tether self) {
     PostMessage(self->hwnd, WM_CLOSE, 0, 0);
+}
+
+void *tether_alloc(uintptr_t size) {
+    return malloc(size);
 }

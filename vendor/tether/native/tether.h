@@ -23,20 +23,6 @@ typedef struct {
 typedef struct _tether *tether;
 
 /**
- * A synthetic network response
- */
-typedef struct {
-    /**
-     * HTTP status code
-     */
-    uintptr_t status_code;
-    /**
-     * Content
-     */
-    const char *content;
-} tether_net_response;
-
-/**
  * A network request
  */
 typedef struct {
@@ -45,13 +31,13 @@ typedef struct {
      */
     const char *request_url;
     /**
-     * Set to true if 'response' is used.
+     * Closure context for respond
      */
-    bool response_set;
+    const void *respond_ctx;
     /**
      * What to respond with, if 'response_set' is true
      */
-    tether_net_response response;
+    void (*respond)(const void *ctx, uintptr_t status_code, const char *content);
 } tether_net_request;
 
 /**
