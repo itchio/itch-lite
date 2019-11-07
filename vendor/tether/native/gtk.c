@@ -8,6 +8,7 @@
 // ===============
 
 struct _tether {
+    tether_options opts;
     GtkWindow *window;
     WebKitWebView *webview;
     void *data;
@@ -37,6 +38,25 @@ static void message_received(WebKitUserContentManager *manager, WebKitJavascript
     char *message = jsc_value_to_string(val);
     handler->func(handler->data, message);
     g_free(message);
+}
+
+static void webview_loaded(WebKitWebView *webview, WebKitLoadEvent load_event, void *data) {
+    switch (load_event) {
+        case WEBKIT_LOAD_COMMITTED: {
+            // good enough to show inspector!
+            WebKitWebInspector *inspector = webkit_web_view_get_inspector(webview);
+            if (inspector) {
+                webkit_web_inspector_detach(inspector);
+                webkit_web_inspector_show(inspector);
+                fprintf(stderr, "Inspector should be visible!\n");
+            } else {
+                fprintf(stderr, "Could not show inspector (is nil) :(\n");
+            }
+            break;
+        }
+        default:
+            break;
+    }
 }
 
 static void handler_free(void *ctx, GClosure *closure) {
@@ -92,6 +112,7 @@ gboolean context_menu(WebKitWebView *wv, WebKitContextMenu *cm, GdkEvent *e, Web
             case WEBKIT_CONTEXT_MENU_ACTION_MEDIA_PLAY:
             case WEBKIT_CONTEXT_MENU_ACTION_MEDIA_PAUSE:
             case WEBKIT_CONTEXT_MENU_ACTION_MEDIA_MUTE:
+            case WEBKIT_CONTEXT_MENU_ACTION_INSERT_EMOJI:
             case WEBKIT_CONTEXT_MENU_ACTION_CUSTOM:
                 break;
             case WEBKIT_CONTEXT_MENU_ACTION_OPEN_LINK_IN_NEW_WINDOW:
@@ -144,6 +165,7 @@ void tether_exit(void) {
 
 tether tether_new(tether_options opts) {
     tether self = malloc(sizeof *self);
+    memcpy(&self->opts, &opts, sizeof opts);
     self->data = opts.data;
     self->closed = opts.closed;
 
@@ -168,7 +190,16 @@ tether tether_new(tether_options opts) {
     WebKitWebView *webview = self->webview = WEBKIT_WEB_VIEW(webkit_web_view_new());
     WebKitSettings *settings = webkit_web_view_get_settings(webview);
     WebKitUserContentManager *manager = webkit_web_view_get_user_content_manager(webview);
-    if (opts.debug) webkit_settings_set_enable_developer_extras(settings, TRUE);
+    if (opts.debug) {
+        webkit_settings_set_enable_developer_extras(settings, TRUE);
+
+        g_signal_connect(
+            webview,
+            "load-changed",
+            G_CALLBACK(webview_loaded),
+            NULL
+        );
+    }
 
     // Listen for messages.
     struct handler *handler = malloc(sizeof *handler);
@@ -214,6 +245,10 @@ void tether_eval(tether self, const char *js) {
 
 void tether_load(tether self, const char *html) {
     webkit_web_view_load_html(self->webview, html, NULL);
+}
+
+void tether_navigate(tether self, const char *uri) {
+    webkit_web_view_load_uri(self->webview, uri);
 }
 
 void tether_title(tether self, const char *title) {

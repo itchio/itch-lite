@@ -77,5 +77,6 @@ fn start() {
     });
 
     win.title("itch lite");
-    win.navigate("http://itch-lite/index.html");
+    // win.navigate("http://itch-lite/index.html");
+    win.load(include_str!("./resources/index.html"));
 }

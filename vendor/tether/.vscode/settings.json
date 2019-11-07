@@ -1,0 +1,28 @@
+{
+    "C_Cpp.default.includePath": [
+        "/usr/include/gtk-3.0",
+        "/usr/include/pango-1.0",
+        "/usr/include/glib-2.0",
+        "/usr/lib/glib-2.0/include",
+        "/usr/lib/libffi-3.2.1/include",
+        "/usr/include/harfbuzz",
+        "/usr/include/fribidi",
+        "/usr/include/freetype2",
+        "/usr/include/libpng16",
+        "/usr/include/uuid",
+        "/usr/include/cairo",
+        "/usr/include/pixman-1",
+        "/usr/include/gdk-pixbuf-2.0",
+        "/usr/include/libmount",
+        "/usr/include/blkid",
+        "/usr/include/gio-unix-2.0",
+        "/usr/include/atk-1.0",
+        "/usr/include/at-spi2-atk/2.0",
+        "/usr/include/at-spi-2.0",
+        "/usr/include/dbus-1.0",
+        "/usr/lib/dbus-1.0/include",
+        "/usr/include/webkitgtk-4.0",
+        "/usr/include/libsoup-2.4",
+        "/usr/include/libxml2"
+    ]
+}
